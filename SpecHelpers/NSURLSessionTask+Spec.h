@@ -20,7 +20,9 @@
 
 @interface NSURLSpecSessionTask : NSObject<NSURLSpecSessionTask>
 
-- (instancetype)initWithRequest:(NSURLRequest *)request session:(NSURLSession *)session;
+- (instancetype)initWithRequest:(NSURLRequest *)request
+                        session:(NSURLSession *)session
+                     identifier:(NSUInteger)identifier;
 - (void)ensureResponse;
 
 @end

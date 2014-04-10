@@ -8,6 +8,8 @@
 @property (nonatomic, assign) BOOL valid;
 @property (nonatomic, weak) id delegate;
 
+@property (nonatomic, assign) NSUInteger nextIdentifier;
+
 @end
 
 
@@ -31,7 +33,9 @@
          raise];
     }
 
-    NSURLSessionDataTask *task = [NSURLSessionDataTask taskWithRequest:request session:self.toNS];
+    NSURLSessionDataTask *task = [NSURLSessionDataTask taskWithRequest:request
+                                                               session:self.toNS
+                                                            identifier:self.nextIdentifier];
     [self.dataTasks addObject:task];
     return task;
 }
@@ -92,6 +96,10 @@ completionHandler:(void(^)(NSURLSessionAuthChallengeDisposition, NSURLCredential
 }
 
 #pragma mark - Private
+
+- (NSUInteger)nextIdentifier {
+    return _nextIdentifier++;
+}
 
 - (NSURLSession *)toNS {
     return (NSURLSession *)self;

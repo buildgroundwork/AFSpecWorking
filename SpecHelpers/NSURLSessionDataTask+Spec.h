@@ -3,7 +3,7 @@
 
 @interface NSURLSessionDataTask (Spec)<NSURLSpecSessionTask>
 
-+ (instancetype)taskWithRequest:(NSURLRequest *)request session:(NSURLSession *)session;
++ (instancetype)taskWithRequest:(NSURLRequest *)request session:(NSURLSession *)session identifier:(NSUInteger)identifer;
 
 - (void)receiveData:(NSData *)data;
 - (void)completeWithError:(NSError *)error; // Task

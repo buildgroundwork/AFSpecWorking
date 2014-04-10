@@ -54,8 +54,10 @@
 
 @implementation NSURLSessionDataTask (Spec)
 
-+ (instancetype)taskWithRequest:(NSURLRequest *)request session:(NSURLSession *)session {
-    return (NSURLSessionDataTask *)[[NSURLSpecSessionDataTask alloc] initWithRequest:request session:session];
++ (instancetype)taskWithRequest:(NSURLRequest *)request session:(NSURLSession *)session identifier:(NSUInteger)identifier {
+    return (NSURLSessionDataTask *)[[NSURLSpecSessionDataTask alloc] initWithRequest:request
+                                                                             session:session
+                                                                          identifier:identifier];
 }
 
 @end

@@ -24,6 +24,19 @@ describe(@"NSURLSessionDataTask", ^{
         task = [session dataTaskWithRequest:request];
     });
 
+    describe(@"-taskIdentifier", ^{
+        __block NSURLSessionTask *otherTask;
+
+        beforeEach(^{
+            NSURLRequest *otherRequest = fake_for([NSURLRequest class]);
+            otherTask = [session dataTaskWithRequest:otherRequest];
+        });
+
+        it(@"should be unique for tasks in the session", ^{
+            task.taskIdentifier should_not equal(otherTask.taskIdentifier);
+        });
+    });
+
     describe(@"-cancel", ^{
         subjectAction(^{ [task cancel]; });
 

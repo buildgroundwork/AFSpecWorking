@@ -25,6 +25,7 @@
 @interface NSURLSpecSessionTask ()
 
 @property (nonatomic, weak) NSURLSession *session;
+@property (nonatomic, assign) NSUInteger taskIdentifier;
 @property (nonatomic, strong) NSURLRequest *originalRequest;
 @property (nonatomic, strong) NSMutableArray *authenticationChallengeResponses;
 @property (nonatomic, strong) NSURLResponse *response;
@@ -33,10 +34,13 @@
 
 @implementation NSURLSpecSessionTask
 
-- (instancetype)initWithRequest:(NSURLRequest *)request session:(NSURLSession *)session {
+- (instancetype)initWithRequest:(NSURLRequest *)request
+                        session:(NSURLSession *)session
+                     identifier:(NSUInteger)identifier {
     if (self = [super init]) {
         self.originalRequest = request;
         self.session = session;
+        self.taskIdentifier = identifier;
         self.authenticationChallengeResponses = [NSMutableArray array];
     }
     return self;
