@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <Group
+      location = "group:SpecHelpers"
+      name = "SpecHelpers">
+      <FileRef
+         location = "group:NSURLSession+Spec.h">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLSession+Spec.m">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLSessionDataTask+Spec.h">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLSessionDataTask+Spec.m">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLSessionTask+Spec.h">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLSessionTask+Spec.m">
+      </FileRef>
+   </Group>
+   <FileRef
+      location = "group:AFSpecWorking.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Pods/Pods.xcodeproj">
+   </FileRef>
+</Workspace>
