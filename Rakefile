@@ -38,6 +38,7 @@ task default: [:trim_whitespace, :specs]
 task :cruise do
   Rake::Task[:clean].invoke
   Rake::Task[:specs].invoke
+  Rake::Task["afn:specs"].invoke
 end
 task all: :cruise
 
@@ -62,5 +63,18 @@ task specs: :build_specs do
   ENV["DYLD_FRAMEWORK_PATH"] = build_dir
   ENV["CEDAR_REPORTER_CLASS"] = "CDRColorizedReporter"
   system_or_exit(File.join(build_dir, SPECS_TARGET_NAME))
+end
+
+namespace :afn do
+  task :build_specs do
+    system_or_exit(%Q[xcodebuild -workspace #{PROJECT_NAME}.xcworkspace -scheme #{"AFNetworkingSpecs"} -configuration #{build_configuration} build CONFIGURATION_BUILD_DIR=#{configuration_build_dir} SYMROOT=#{BUILD_DIR}], output_file("afn_specs"))
+  end
+
+  task specs: :build_specs do
+    build_dir = configuration_build_dir
+    ENV["DYLD_FRAMEWORK_PATH"] = build_dir
+    ENV["CEDAR_REPORTER_CLASS"] = "CDRColorizedReporter"
+    system_or_exit(File.join(build_dir, "AFNetworkingSpecs"))
+  end
 end
 
