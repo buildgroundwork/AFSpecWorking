@@ -5,8 +5,9 @@
 @interface NSURLSpecSession : NSObject
 
 @property (nonatomic, strong, readwrite) NSMutableArray *dataTasks;
-@property (nonatomic, assign) BOOL valid;
+@property (nonatomic, strong) NSURLSessionConfiguration *configuration;
 @property (nonatomic, weak) id delegate;
+@property (nonatomic, assign) BOOL valid;
 
 @property (nonatomic, assign) NSUInteger nextIdentifier;
 
@@ -16,6 +17,7 @@
 @implementation NSURLSpecSession
 
 - (instancetype)initWithConfiguration:(NSURLSessionConfiguration *)configuration delegate:(id <NSURLSessionDelegate>)delegate delegateQueue:(NSOperationQueue *)queue {
+    self.configuration = configuration;
     self.delegate = delegate;
 
     self.dataTasks = [NSMutableArray array];

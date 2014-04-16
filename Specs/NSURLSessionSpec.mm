@@ -8,15 +8,22 @@ SPEC_BEGIN(NSURLSessionSpec)
 
 describe(@"NSURLSession", ^{
     __block NSURLSession *session;
+    __block NSURLSessionConfiguration *configuration;
     __block id<NSURLSessionDelegate> delegate;
     __block NSURLRequest *request;
 
     beforeEach(^{
-        NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+        configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
         delegate = fake_for(@protocol(NSURLSessionDelegate));
         session = [NSURLSession sessionWithConfiguration:configuration delegate:delegate delegateQueue:nil];
 
         request = fake_for([NSURLRequest class]);
+    });
+
+    describe(@"-configuration", ^{
+        it(@"should return the provided configuration", ^{
+            session.configuration should equal(configuration);
+        });
     });
 
     describe(@"-dataTaskWithRequest:", ^{
