@@ -25,6 +25,12 @@ describe(@"NSURLSessionDataTask", ^{
         task = [session dataTaskWithRequest:request];
     });
 
+    describe(@"on initialization", ^{
+        it(@"should set the state to NSURLSessionTaskStateSuspended", ^{
+            task.state should equal(NSURLSessionTaskStateSuspended);
+        });
+    });
+
     describe(@"-taskIdentifier", ^{
         __block NSURLSessionTask *otherTask;
 
@@ -38,29 +44,136 @@ describe(@"NSURLSessionDataTask", ^{
         });
     });
 
+    describe(@"-resume", ^{
+        subjectAction(^{ [task resume]; });
+
+        context(@"when the task is suspended", ^{
+            beforeEach(^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should change the state of the task to NSURLSessionTaskStateRunning", ^{
+                task.state should equal(NSURLSessionTaskStateRunning);
+            });
+        });
+
+        context(@"when the task is running", ^{
+            beforeEach(^{
+                [task resume];
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateRunning);
+            });
+        });
+
+        context(@"when the task is canceled", ^{
+            beforeEach(^{
+                [task cancel];
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+        });
+    });
+
+    describe(@"-suspend", ^{
+        subjectAction(^{ [task suspend]; });
+
+        context(@"when the task is suspended", ^{
+            beforeEach(^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+        });
+
+        context(@"when the task is running", ^{
+            beforeEach(^{
+                [task resume];
+            });
+
+            it(@"should change the state of the task to NSURLSessionTaskStateSuspended", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            context(@"when the task has received a response", ^{
+                __block NSURLResponse *response;
+
+                beforeEach(^{
+                    response = fake_for([NSURLResponse class]);
+                    [task receiveResponse:response];
+                });
+
+                it(@"should reset the response", ^{
+                    [task completeWithError:nil];
+                    task.response should_not be_same_instance_as(response);
+                });
+            });
+        });
+
+        context(@"when the task is completed", ^{
+            beforeEach(^{
+                [task cancel];
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+        });
+    });
+
     describe(@"-cancel", ^{
         subjectAction(^{ [task cancel]; });
 
-        it(@"should remove the task from the session's list of tasks", ^{
-            session.dataTasks should_not contain(task);
+        context(@"when the task is running", ^{
+            beforeEach(^{
+                [task resume];
+            });
+
+            it(@"should remove the task from the session's list of tasks", ^{
+                session.dataTasks should_not contain(task);
+            });
+
+            it(@"should change the state of the task to NSURLSessionTaskStateCompleted", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            context(@"when the delegate implements -URLSession:task:didCompleteWithError:", ^{
+                beforeEach(^{
+                    delegate stub_method("URLSession:task:didCompleteWithError:");
+                });
+
+                it(@"should notify the delegate", ^{
+                    delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, Arguments::any([NSError class]));
+                });
+            });
+
+            context(@"when the delegate does not implement -URLSession:task:didCompleteWithError:", ^{
+                beforeEach(^{
+                    delegate reject_method("URLSession:task:didCompleteWithError:");
+                });
+
+                it(@"should not try to notify the delegate", ^{
+                    delegate should_not have_received("URLSession:task:didCompleteWithError:");
+                });
+            });
         });
 
-        context(@"when the delegate implements -URLSession:task:didCompleteWithError:", ^{
+        context(@"when the task is complete", ^{
             beforeEach(^{
-                delegate stub_method("URLSession:task:didCompleteWithError:");
+                [task cancel];
+                [delegate reset_sent_messages];
             });
 
-            it(@"should notify the delegate", ^{
-                delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, Arguments::any([NSError class]));
-            });
-        });
-
-        context(@"when the delegate does not implement -URLSession:task:didCompleteWithError:", ^{
-            beforeEach(^{
-                delegate reject_method("URLSession:task:didCompleteWithError:");
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
             });
 
-            it(@"should not try to notify the delegate", ^{
+            it(@"should not notify the delegate", ^{
                 delegate should_not have_received("URLSession:task:didCompleteWithError:");
             });
         });
@@ -71,35 +184,70 @@ describe(@"NSURLSessionDataTask", ^{
 
         subjectAction(^{ [task receiveResponse:response]; });
 
-        beforeEach(^{
-            NSURL *url = [NSURL URLWithString:@"/"];
-            response = [[NSHTTPURLResponse alloc] initWithURL:url statusCode:200 HTTPVersion:@"1.0" headerFields:@{}];
-        });
-
-        it(@"should not remove the task from the session's list of tasks", ^{
-            session.dataTasks should contain(task);
-        });
-
-        it(@"should assign the response to the task's response property", ^{
-            task.response should equal(response);
-        });
-
-        context(@"when the delegate implements -URLSession:dataTask:didReceiveResponse:completionHandler:", ^{
+        context(@"when running", ^{
             beforeEach(^{
+                [task resume];
                 delegate stub_method("URLSession:dataTask:didReceiveResponse:completionHandler:");
             });
 
-            it(@"should notify the delegate", ^{
-                delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
+            beforeEach(^{
+                NSURL *url = [NSURL URLWithString:@"/"];
+                response = [[NSHTTPURLResponse alloc] initWithURL:url statusCode:200 HTTPVersion:@"1.0" headerFields:@{}];
+            });
+
+            it(@"should not remove the task from the session's list of tasks", ^{
+                session.dataTasks should contain(task);
+            });
+
+            it(@"should assign the response to the task's response property", ^{
+                task.response should equal(response);
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateRunning);
+            });
+
+            context(@"when the delegate implements -URLSession:dataTask:didReceiveResponse:completionHandler:", ^{
+                it(@"should notify the delegate", ^{
+                    delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
+                });
+            });
+
+            context(@"when the delegate does not implement -URLSession:dataTask:didReceiveResponse:completionHandler:", ^{
+                beforeEach(^{
+                    delegate reject_method("URLSession:dataTask:didReceiveResponse:completionHandler:");
+                });
+
+                it(@"should not try to notify the delegate", ^{
+                    delegate should_not have_received("URLSession:dataTask:didReceiveResponse:completionHandler:");
+                });
             });
         });
 
-        context(@"when the delegate does not implement -URLSession:dataTask:didReceiveResponse:completionHandler:", ^{
+        context(@"when suspended", ^{
             beforeEach(^{
-                delegate reject_method("URLSession:dataTask:didReceiveResponse:completionHandler:");
+                task.state should equal(NSURLSessionTaskStateSuspended);
             });
 
-            it(@"should not try to notify the delegate", ^{
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not notify the delegate", ^{
+                delegate should_not have_received("URLSession:dataTask:didReceiveResponse:completionHandler:");
+            });
+        });
+
+        context(@"when complete", ^{
+            beforeEach(^{
+                [task cancel];
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            it(@"should not notify the delegate", ^{
                 delegate should_not have_received("URLSession:dataTask:didReceiveResponse:completionHandler:");
             });
         });
@@ -114,47 +262,82 @@ describe(@"NSURLSessionDataTask", ^{
             data = [NSData data];
         });
 
-        it(@"should not remove the task from the session's list of tasks", ^{
-            session.dataTasks should contain(task);
-        });
-
-        context(@"when the delegate implements -URLSession:dataTask:didReceiveData:", ^{
+        context(@"when running", ^{
             beforeEach(^{
+                [task resume];
                 delegate stub_method("URLSession:dataTask:didReceiveData:");
             });
 
-            it(@"should notify the delegate", ^{
-                delegate should have_received("URLSession:dataTask:didReceiveData:").with(session, task, data);
+            it(@"should not remove the task from the session's list of tasks", ^{
+                session.dataTasks should contain(task);
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateRunning);
+            });
+
+            context(@"when the delegate implements -URLSession:dataTask:didReceiveData:", ^{
+                it(@"should notify the delegate", ^{
+                    delegate should have_received("URLSession:dataTask:didReceiveData:").with(session, task, data);
+                });
+            });
+
+            context(@"when the delegate does not implement -URLSession:dataTask:didReceiveData:", ^{
+                beforeEach(^{
+                    delegate reject_method("URLSession:dataTask:didReceiveData:");
+                });
+
+                it(@"should not try to notify the delegate", ^{
+                    delegate should_not have_received("URLSession:dataTask:didReceiveData:");
+                });
+            });
+
+            context(@"when the task has previously received a response", ^{
+                __block NSURLResponse<CedarDouble> *response;
+
+                beforeEach(^{
+                    response = fake_for([NSURLResponse class]);
+                    [task receiveResponse:response];
+                });
+
+                it(@"should not change the task's response property", ^{
+                    task.response should equal(response);
+                });
+            });
+
+            context(@"when the task has not previously received a response", ^{
+                it(@"should assign a default, successful response to the task's response property", ^{
+                    id response = task.response;
+                    [response statusCode] should equal(200);
+                });
             });
         });
 
-        context(@"when the delegate does not implement -URLSession:dataTask:didReceiveData:", ^{
+        context(@"when suspended", ^{
             beforeEach(^{
-                delegate reject_method("URLSession:dataTask:didReceiveData:");
+                task.state should equal(NSURLSessionTaskStateSuspended);
             });
 
-            it(@"should not try to notify the delegate", ^{
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not notify the delegate", ^{
                 delegate should_not have_received("URLSession:dataTask:didReceiveData:");
             });
         });
 
-        context(@"when the task has previously received a response", ^{
-            __block NSURLResponse<CedarDouble> *response;
-
+        context(@"when complete", ^{
             beforeEach(^{
-                response = fake_for([NSURLResponse class]);
-                [task receiveResponse:response];
+                [task cancel];
             });
 
-            it(@"should not change the task's response property", ^{
-                task.response should equal(response);
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
             });
-        });
 
-        context(@"when the task has not previously received a response", ^{
-            it(@"should assign a default, successful response to the task's response property", ^{
-                id response = task.response;
-                [response statusCode] should equal(200);
+            it(@"should not notify the delegate", ^{
+                delegate should_not have_received("URLSession:dataTask:didReceiveData:");
             });
         });
     });
@@ -168,47 +351,83 @@ describe(@"NSURLSessionDataTask", ^{
             error = fake_for([NSError class]);
         });
 
-        it(@"should remove the task from the session's list of tasks", ^{
-            session.dataTasks should_not contain(task);
-        });
-
-        context(@"when the delegate implements -URLSession:task:didCompleteWithError:", ^{
+        context(@"when running", ^{
             beforeEach(^{
+                [task resume];
                 delegate stub_method("URLSession:task:didCompleteWithError:");
             });
 
-            it(@"should notify the delegate", ^{
-                delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+            it(@"should remove the task from the session's list of tasks", ^{
+                session.dataTasks should_not contain(task);
+            });
+
+            it(@"should change the state of the task to NSURLSessionTaskStateCompleted", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            context(@"when the delegate implements -URLSession:task:didCompleteWithError:", ^{
+                it(@"should notify the delegate", ^{
+                    delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+                });
+            });
+
+            context(@"when the delegate does not implement -URLSession:task:didCompleteWithError:", ^{
+                beforeEach(^{
+                    delegate reject_method("URLSession:task:didCompleteWithError:");
+                });
+
+                it(@"should not try to notify the delegate", ^{
+                    delegate should_not have_received("URLSession:task:didCompleteWithError:");
+                });
+            });
+
+            context(@"when the task has previously received a response", ^{
+                __block NSURLResponse<CedarDouble> *response;
+
+                beforeEach(^{
+                    response = fake_for([NSURLResponse class]);
+                    [task receiveResponse:response];
+                });
+
+                it(@"should not change the task's response property", ^{
+                    task.response should equal(response);
+                });
+            });
+
+            context(@"when the task has not previously received a response", ^{
+                it(@"should assign a default, successful response to the task's response property", ^{
+                    id response = task.response;
+                    [response statusCode] should equal(200);
+                });
             });
         });
 
-        context(@"when the delegate does not implement -URLSession:task:didCompleteWithError:", ^{
+        context(@"when suspended", ^{
             beforeEach(^{
-                delegate reject_method("URLSession:task:didCompleteWithError:");
+                task.state should equal(NSURLSessionTaskStateSuspended);
             });
 
-            it(@"should not try to notify the delegate", ^{
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not notify the delegate", ^{
                 delegate should_not have_received("URLSession:task:didCompleteWithError:");
             });
         });
 
-        context(@"when the task has previously received a response", ^{
-            __block NSURLResponse<CedarDouble> *response;
-
+        context(@"when complete", ^{
             beforeEach(^{
-                response = fake_for([NSURLResponse class]);
-                [task receiveResponse:response];
+                [task cancel];
+                [delegate reset_sent_messages];
             });
 
-            it(@"should not change the task's response property", ^{
-                task.response should equal(response);
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
             });
-        });
 
-        context(@"when the task has not previously received a response", ^{
-            it(@"should assign a default, successful response to the task's response property", ^{
-                id response = task.response;
-                [response statusCode] should equal(200);
+            it(@"should not notify the delegate", ^{
+                delegate should_not have_received("URLSession:task:didCompleteWithError:");
             });
         });
     });
@@ -226,31 +445,70 @@ describe(@"NSURLSessionDataTask", ^{
             error = fake_for([NSError class]);
         });
 
-        it(@"should assign the response", ^{
-            task.response should equal(response);
+        context(@"when running", ^{
+            beforeEach(^{
+                [task resume];
+            });
+
+            it(@"should assign the response", ^{
+                task.response should equal(response);
+            });
+
+            it(@"should change the state of the task to NSURLSessionTaskStateCompleted", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            context(@"with data", ^{
+                beforeEach(^{
+                    data should_not be_nil;
+                });
+
+                it(@"should should notify the delegate", ^{
+                    delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
+                    delegate should have_received("URLSession:dataTask:didReceiveData:").with(session, task, data);
+                    delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+                });
+            });
+
+            context(@"without data", ^{
+                beforeEach(^{
+                    data = nil;
+                });
+
+                it(@"should should notify the delegate", ^{
+                    delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
+                    delegate should_not have_received("URLSession:dataTask:didReceiveData:");
+                    delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+                });
+            });
         });
 
-        context(@"with data", ^{
+        context(@"when suspended", ^{
             beforeEach(^{
-                data should_not be_nil;
+                task.state should equal(NSURLSessionTaskStateSuspended);
             });
 
-            it(@"should should notify the delegate", ^{
-                delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
-                delegate should have_received("URLSession:dataTask:didReceiveData:").with(session, task, data);
-                delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not notify the delegate", ^{
+                [delegate sent_messages] should be_empty;
             });
         });
 
-        context(@"without data", ^{
+        context(@"when complete", ^{
             beforeEach(^{
-                data = nil;
+                [task cancel];
+                [delegate reset_sent_messages];
             });
 
-            it(@"should should notify the delegate", ^{
-                delegate should have_received("URLSession:dataTask:didReceiveResponse:completionHandler:").with(session, task, response, Arguments::anything);
-                delegate should_not have_received("URLSession:dataTask:didReceiveData:");
-                delegate should have_received("URLSession:task:didCompleteWithError:").with(session, task, error);
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            it(@"should not notify the delegate", ^{
+                [delegate sent_messages] should be_empty;
             });
         });
     });
@@ -264,40 +522,74 @@ describe(@"NSURLSessionDataTask", ^{
             challenge = fake_for([NSURLAuthenticationChallenge class]);
         });
 
-        it(@"should not call the delegate method for session-level authentication", ^{
-            delegate should_not have_received("URLSession:didReceiveChallenge:completionHandler:");
-        });
-
-        context(@"when the delegate implements -URLSession:task:didReceiveChallenge:completionHandler:", ^{
-            NSURLSessionAuthChallengeDisposition disposition = NSURLSessionAuthChallengeUseCredential;
-            NSURLCredential *credential = fake_for([NSURLCredential class]);
-
+        context(@"when running", ^{
             beforeEach(^{
-                delegate stub_method("URLSession:task:didReceiveChallenge:completionHandler:").and_do(^(NSInvocation *invocation) {
-                    void (^completionHandler)(NSURLSessionAuthChallengeDisposition, NSURLCredential *);
-                    [invocation getArgument:&completionHandler atIndex:5];
+                [task resume];
+            });
 
-                    completionHandler(disposition, credential);
+            it(@"should not call the delegate method for session-level authentication", ^{
+                delegate should_not have_received("URLSession:didReceiveChallenge:completionHandler:");
+            });
+
+            context(@"when the delegate implements -URLSession:task:didReceiveChallenge:completionHandler:", ^{
+                NSURLSessionAuthChallengeDisposition disposition = NSURLSessionAuthChallengeUseCredential;
+                NSURLCredential *credential = fake_for([NSURLCredential class]);
+
+                beforeEach(^{
+                    delegate stub_method("URLSession:task:didReceiveChallenge:completionHandler:").and_do(^(NSInvocation *invocation) {
+                        void (^completionHandler)(NSURLSessionAuthChallengeDisposition, NSURLCredential *);
+                        [invocation getArgument:&completionHandler atIndex:5];
+
+                        completionHandler(disposition, credential);
+                    });
+                });
+
+                it(@"should notify the delegate", ^{
+                    delegate should have_received("URLSession:task:didReceiveChallenge:completionHandler:").with(session, task, challenge, Arguments::anything);
+                });
+
+                it(@"should record the delegate's response to the challenge", ^{
+                    task.authenticationChallengeResponses should_not be_empty;
+                    [task.authenticationChallengeResponses.firstObject disposition] should equal(disposition);
+                    [task.authenticationChallengeResponses.firstObject credential] should equal(credential);
                 });
             });
 
-            it(@"should notify the delegate", ^{
-                delegate should have_received("URLSession:task:didReceiveChallenge:completionHandler:").with(session, task, challenge, Arguments::anything);
-            });
+            context(@"when the delegate does not implement -URLSession:task:didReceiveChallenge:completionHandler:", ^{
+                beforeEach(^{
+                    delegate reject_method("URLSession:task:didReceiveChallenge:completionHandler:");
+                });
 
-            it(@"should record the delegate's response to the challenge", ^{
-                task.authenticationChallengeResponses should_not be_empty;
-                [task.authenticationChallengeResponses.firstObject disposition] should equal(disposition);
-                [task.authenticationChallengeResponses.firstObject credential] should equal(credential);
+                it(@"should not try to notify the delegate", ^{
+                    delegate should_not have_received("URLSession:task:didReceiveChallenge:completionHandler:");
+                });
             });
         });
 
-        context(@"when the delegate does not implement -URLSession:task:didReceiveChallenge:completionHandler:", ^{
+        context(@"when suspended", ^{
             beforeEach(^{
-                delegate reject_method("URLSession:task:didReceiveChallenge:completionHandler:");
+                task.state should equal(NSURLSessionTaskStateSuspended);
             });
 
-            it(@"should not try to notify the delegate", ^{
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateSuspended);
+            });
+
+            it(@"should not notify the delegate", ^{
+                delegate should_not have_received("URLSession:task:didReceiveChallenge:completionHandler:");
+            });
+        });
+
+        context(@"when complete", ^{
+            beforeEach(^{
+                [task cancel];
+            });
+
+            it(@"should not change the state of the task", ^{
+                task.state should equal(NSURLSessionTaskStateCompleted);
+            });
+
+            it(@"should not notify the delegate", ^{
                 delegate should_not have_received("URLSession:task:didReceiveChallenge:completionHandler:");
             });
         });

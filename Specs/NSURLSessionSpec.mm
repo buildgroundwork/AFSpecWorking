@@ -77,7 +77,7 @@ describe(@"NSURLSession", ^{
             ^{ [session dataTaskWithRequest:request]; } should raise_exception;
         });
 
-        context(@"with active tasks", ^{
+        context(@"with an active task", ^{
             __block NSURLSessionTask *task;
 
             beforeEach(^{
@@ -143,6 +143,7 @@ describe(@"NSURLSession", ^{
             request stub_method("URL").and_return([NSURL URLWithString:@"/"]);
 
             task = [session dataTaskWithRequest:request];
+            [task resume];
             [session finishTasksAndInvalidate];
         });
 

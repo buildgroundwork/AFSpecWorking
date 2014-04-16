@@ -7,26 +7,20 @@
 
 @implementation NSURLSpecSessionDataTask
 
-- (void)cancel {
-    NSError *error = [NSError errorWithDomain:@"cancelled" code:-999 userInfo:nil];
-    [self.session taskDidComplete:self.toNS error:error];
-}
-
 #pragma mark - Spec interface
 
 - (void)receiveResponse:(NSURLResponse *)response {
-    [super receiveResponse:response];
-    [self.session dataTask:self.toNS didReceiveResponse:response];
+    [self ifRunning:^{
+        [super receiveResponse:response];
+        [self.session dataTask:self.toNS didReceiveResponse:response];
+    }];
 }
 
 - (void)receiveData:(NSData *)data {
-    [self ensureResponse];
-    [self.session dataTask:self.toNS didReceiveData:data];
-}
-
-- (void)completeWithError:(NSError *)error {
-    [self ensureResponse];
-    [self.session taskDidComplete:self.toNS error:error];
+    [self ifRunning:^{
+        [self ensureResponse];
+        [self.session dataTask:self.toNS didReceiveData:data];
+    }];
 }
 
 - (void)completeWithResponse:(NSURLResponse *)response data:(NSData *)data error:(NSError *)error {

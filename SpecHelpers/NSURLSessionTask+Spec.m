@@ -25,6 +25,7 @@
 @interface NSURLSpecSessionTask ()
 
 @property (nonatomic, weak) NSURLSession *session;
+@property (nonatomic, assign) NSURLSessionTaskState state;
 @property (nonatomic, assign) NSUInteger taskIdentifier;
 @property (nonatomic, strong) NSURLRequest *originalRequest;
 @property (nonatomic, strong) NSMutableArray *authenticationChallengeResponses;
@@ -40,21 +41,55 @@
     if (self = [super init]) {
         self.originalRequest = request;
         self.session = session;
+        self.state = NSURLSessionTaskStateSuspended;
         self.taskIdentifier = identifier;
         self.authenticationChallengeResponses = [NSMutableArray array];
     }
     return self;
 }
 
+- (void)resume {
+    [self ifNotCompleted:^{
+        self.state = NSURLSessionTaskStateRunning;
+    }];
+}
+
+- (void)suspend {
+    [self ifNotCompleted:^{
+        self.response = nil;
+        self.state = NSURLSessionTaskStateSuspended;
+    }];
+}
+
+- (void)cancel {
+    [self ifNotCompleted:^{
+        NSError *error = [NSError errorWithDomain:@"cancelled" code:-999 userInfo:nil];
+        self.state = NSURLSessionTaskStateCompleted;
+        [self.session taskDidComplete:self.toNS error:error];
+    }];
+}
+
+#pragma mark Spec interface
+
 - (void)receiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
-    [self.session task:self.toNS didReceiveAuthenticationChallenge:challenge completionHandler:^(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential) {
-        NSURLAuthenticationChallengeResponse *response = [[NSURLAuthenticationChallengeResponse alloc] initWithDisposition:disposition credential:credential];
-        [self.authenticationChallengeResponses addObject:response];
+    [self ifRunning:^{
+        [self.session task:self.toNS didReceiveAuthenticationChallenge:challenge completionHandler:^(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential) {
+            NSURLAuthenticationChallengeResponse *response = [[NSURLAuthenticationChallengeResponse alloc] initWithDisposition:disposition credential:credential];
+            [self.authenticationChallengeResponses addObject:response];
+        }];
     }];
 }
 
 - (void)receiveResponse:(NSURLResponse *)response {
     self.response = response;
+}
+
+- (void)completeWithError:(NSError *)error {
+    [self ifRunning:^{
+        [self ensureResponse];
+        self.state = NSURLSessionTaskStateCompleted;
+        [self.session taskDidComplete:self.toNS error:error];
+    }];
 }
 
 - (void)ensureResponse {
@@ -67,10 +102,22 @@
     }
 }
 
+- (void)ifRunning:(void (^)())action {
+    if (self.state == NSURLSessionTaskStateRunning) {
+        action();
+    }
+}
+
 #pragma mark Private interface
 
 - (NSURLSessionTask *)toNS {
     return (NSURLSessionTask *)self;
+}
+
+- (void)ifNotCompleted:(void (^)())action {
+    if (self.state != NSURLSessionTaskStateCompleted) {
+        action();
+    }
 }
 
 @end

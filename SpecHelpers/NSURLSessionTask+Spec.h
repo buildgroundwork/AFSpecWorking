@@ -15,6 +15,7 @@
 
 - (void)receiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge;
 - (void)receiveResponse:(NSURLResponse *)response;
+- (void)completeWithError:(NSError *)error;
 
 @end
 
@@ -24,6 +25,7 @@
                         session:(NSURLSession *)session
                      identifier:(NSUInteger)identifier;
 - (void)ensureResponse;
+- (void)ifRunning:(void (^)())action;
 
 @end
 
