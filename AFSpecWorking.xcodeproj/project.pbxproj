@@ -16,6 +16,7 @@
 		5FA0BA2118F703EB0075F967 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F921F9F18F6BF46000F4295 /* Foundation.framework */; };
 		5FA0BA2918F703EB0075F967 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5FA0BA2818F703EB0075F967 /* main.m */; };
 		5FA0BA3018F704B30075F967 /* AFURLSessionManagerSpec.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5FA0BA2F18F704B30075F967 /* AFURLSessionManagerSpec.mm */; };
+		5FD80335190016DA008EB342 /* NSURLRequestSpec.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5FD80334190016DA008EB342 /* NSURLRequestSpec.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		5FA0BA2518F703EB0075F967 /* AFNetworkingSpecs-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AFNetworkingSpecs-Prefix.pch"; sourceTree = "<group>"; };
 		5FA0BA2818F703EB0075F967 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		5FA0BA2F18F704B30075F967 /* AFURLSessionManagerSpec.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AFURLSessionManagerSpec.mm; sourceTree = "<group>"; };
+		5FD80334190016DA008EB342 /* NSURLRequestSpec.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = NSURLRequestSpec.mm; sourceTree = "<group>"; };
 		80E05FE5F5924B0BA9971E92 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3DDD9ABF0F6453AA69D4D69 /* libPods-AFNetworkingSpecs.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AFNetworkingSpecs.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4D8E1DC854D45FFA01AFCA3 /* Pods.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.xcconfig; path = Pods/Pods.xcconfig; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 			children = (
 				5FA0BA1818F700A60075F967 /* NSURLSessionDataTaskSpec.mm */,
 				5FA0BA1918F700A60075F967 /* NSURLSessionSpec.mm */,
+				5FD80334190016DA008EB342 /* NSURLRequestSpec.mm */,
 				5FA0BA0C18F6FF0D0075F967 /* Supporting Files */,
 			);
 			path = Specs;
@@ -230,6 +233,7 @@
 				5FA0BA1B18F700A60075F967 /* NSURLSessionSpec.mm in Sources */,
 				5FA0BA1118F6FF0D0075F967 /* main.m in Sources */,
 				5FA0BA1A18F700A60075F967 /* NSURLSessionDataTaskSpec.mm in Sources */,
+				5FD80335190016DA008EB342 /* NSURLRequestSpec.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

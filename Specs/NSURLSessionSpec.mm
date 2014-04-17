@@ -17,7 +17,8 @@ describe(@"NSURLSession", ^{
         delegate = fake_for(@protocol(NSURLSessionDelegate));
         session = [NSURLSession sessionWithConfiguration:configuration delegate:delegate delegateQueue:nil];
 
-        request = fake_for([NSURLRequest class]);
+        request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"/"]];
+        spy_on(request);
     });
 
     describe(@"-configuration", ^{
@@ -27,15 +28,28 @@ describe(@"NSURLSession", ^{
     });
 
     describe(@"-dataTaskWithRequest:", ^{
-        subjectAction(^{ [session dataTaskWithRequest:request]; });
+        __block NSURLSessionTask *task;
 
-        it(@"should create a data task for the request", ^{
+        subjectAction(^{ task = [session dataTaskWithRequest:request]; });
+
+        it(@"should add the task to the session's task list", ^{
             session.tasks should_not be_empty;
         });
 
         it(@"should associate the data task with the specified request", ^{
-            NSURLSessionTask *task = session.dataTasks[0];
             task.originalRequest should equal(request);
+        });
+
+        context(@"with additional headers set in the configuration", ^{
+            NSString *headerKey = @"X-User-Foo", *headerValue = @"Wibble";
+
+            beforeEach(^{
+                configuration.HTTPAdditionalHeaders = @{ headerKey: headerValue };
+            });
+
+            it(@"should include the additional headers in the request", ^{
+                task.originalRequest.allHTTPHeaderFields[headerKey] should equal(headerValue);
+            });
         });
     });
 

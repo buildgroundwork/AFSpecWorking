@@ -22,6 +22,12 @@
       <FileRef
          location = "group:NSURLSessionTask+Spec.m">
       </FileRef>
+      <FileRef
+         location = "group:NSURLRequest+Spec.h">
+      </FileRef>
+      <FileRef
+         location = "group:NSURLRequest+Spec.m">
+      </FileRef>
    </Group>
    <FileRef
       location = "group:AFSpecWorking.xcodeproj">

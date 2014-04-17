@@ -1,5 +1,6 @@
 #import "NSURLSession+Spec.h"
 #import "NSURLSessionDataTask+Spec.h"
+#import "NSURLRequest+Spec.h"
 #import "objc/runtime.h"
 
 @interface NSURLSpecSession : NSObject
@@ -35,6 +36,7 @@
          raise];
     }
 
+    [self addAdditionalHeaderFieldsToRequest:request];
     NSURLSessionDataTask *task = [NSURLSessionDataTask taskWithRequest:request
                                                                session:self.toNS
                                                             identifier:self.nextIdentifier];
@@ -120,6 +122,12 @@ completionHandler:(void(^)(NSURLSessionAuthChallengeDisposition, NSURLCredential
         id delegate = [self delegateForSelector:@selector(URLSession:didBecomeInvalidWithError:)];
         [delegate URLSession:self.toNS didBecomeInvalidWithError:nil];
     }
+}
+
+- (void)addAdditionalHeaderFieldsToRequest:(NSURLRequest *)request {
+    [self.configuration.HTTPAdditionalHeaders enumerateKeysAndObjectsUsingBlock:^(id header, id value, BOOL *stop) {
+        [request setValue:value forHTTPHeaderField:header];
+    }];
 }
 
 @end
