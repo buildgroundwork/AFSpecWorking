@@ -1,5 +1,4 @@
-#import "NSURLSession+Spec.h"
-#import "NSURLSessionDataTask+Spec.h"
+#import "AFSpecWorking/SpecHelpers.h"
 
 using namespace Cedar::Matchers;
 using namespace Cedar::Doubles;

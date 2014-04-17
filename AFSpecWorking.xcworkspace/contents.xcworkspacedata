@@ -5,6 +5,9 @@
       location = "group:SpecHelpers"
       name = "SpecHelpers">
       <FileRef
+         location = "group:SpecHelpers.h">
+      </FileRef>
+      <FileRef
          location = "group:NSURLSession+Spec.h">
       </FileRef>
       <FileRef
